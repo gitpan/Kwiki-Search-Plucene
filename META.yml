@@ -1,5 +1,5 @@
 name: Kwiki-Search-Plucene
-version: 0.02
+version: 0.03
 abstract: Kwiki Search Engine powered by Plucene
 author: Kang-min Liu <gugod@gugod.org>
 license: perl

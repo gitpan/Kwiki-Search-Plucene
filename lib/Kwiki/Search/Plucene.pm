@@ -1,7 +1,7 @@
 package Kwiki::Search::Plucene;
 use Kwiki::Search -Base;
 use Plucene::Simple;
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 field plucy => {},
     -init => q{Plucene::Simple->open($self->index_path)};
@@ -18,10 +18,10 @@ sub build_index {
     $cmd->msg("Building Plucene Index...\n");
     for($self->hub->pages->all) {
         $cmd->msg("  - Indexing " . $_->id . "\n");
-        $self->plucy->add($_ => {text => $_->content});
+        $self->update_page($_);
     }
-    $cmd->msg("Done\n");
     $self->plucy->optimize;
+    $cmd->msg("Done\n");
 }
 
 sub perform_search {
@@ -33,9 +33,14 @@ sub index_path {
 }
 
 sub update_index {
-    my $plugin = $self->hub->load_class('search');
-    $plugin->plucy->add($self->id => {text => $self->content});
-    $plugin->plucy->optimize;
+    $self->hub->load_class('search')->update_page($self);
+}
+
+sub update_page {
+    my $page = shift;
+    $self->plucy->delete_document($page->id,$page->content)
+        if(-d $self->index_path);
+    $self->plucy->index_document($page->id,$page->content);
 }
 
 =head1 NAME
@@ -54,6 +59,10 @@ a Perl port of the Lucene search engine.
 Note that, by each time you do a C<"kwiki -update">, plucene index
 will be rebuilt. This would help current running sites to build
 plucene index for the very first time.
+
+=head1 SEE ALSO
+
+L<Plucene::Simple>, L<Plucene>, L<Kwiki>
 
 =head1 COPYRIGHT
 
