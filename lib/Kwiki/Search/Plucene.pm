@@ -1,7 +1,7 @@
 package Kwiki::Search::Plucene;
 use Kwiki::Search -Base;
 use Plucene::Simple;
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 field plucy => {},
     -init => q{Plucene::Simple->open($self->index_path)};
@@ -10,6 +10,18 @@ sub register {
     super;
     my $reg = shift;
     $reg->add(hook => 'page:store', post => 'update_index');
+    $self->build_index;
+}
+
+sub build_index {
+    my $cmd = $self->hub->command;
+    $cmd->msg("Building Plucene Index...\n");
+    for($self->hub->pages->all) {
+        $cmd->msg("  - Indexing " . $_->id . "\n");
+        $self->plucy->add($_ => {text => $_->content});
+    }
+    $cmd->msg("Done\n");
+    $self->plucy->optimize;
 }
 
 sub perform_search {
@@ -38,6 +50,10 @@ pages grow larger and larger.
 
 It use L<Plucene::Simple> to index page content upon saving.  Plucene is
 a Perl port of the Lucene search engine.
+
+Note that, by each time you do a C<"kwiki -update">, plucene index
+will be rebuilt. This would help current running sites to build
+plucene index for the very first time.
 
 =head1 COPYRIGHT
 
